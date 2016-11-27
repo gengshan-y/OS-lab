@@ -25,26 +25,27 @@ int main(int argc, char* argv[]) {
 
   assert(randNContnr.size() == totalInstruction);
 
-  uint32_t diseffect;
-/*
-  diseffect =  FIFOMan(randNContnr);
-  cout << "\nFIFO hit rate = " << 1 - float(diseffect)/totalInstruction << endl;
-  diseffect = LRUMan(randNContnr);
-  cout << "\nLRU hit rate = " << 1 - float(diseffect)/totalInstruction << endl;
-  diseffect =  NURMan(randNContnr);
-  cout << "\nFIFO hit rate = " << 1 - float(diseffect)/totalInstruction << endl;
-*/
+  uint32_t diseffectFIFO =  FIFOMan(randNContnr);
+  uint32_t diseffectLRU =  LRUMan(randNContnr);
+  uint32_t diseffectNUR =  NURMan(randNContnr);
+  uint32_t diseffectOPT =  OPTMan(randNContnr);
+  cout << "\nFIFO hit rate = " << 1 - float(diseffectFIFO)/totalInstruction << endl;
+  cout << "\nLRU hit rate = " << 1 - float(diseffectLRU)/totalInstruction << endl;
+  cout << "\nNUR hit rate = " << 1 - float(diseffectNUR)/totalInstruction << endl;
+  cout << "\nOPT hit rate = " << 1 - float(diseffectOPT)/totalInstruction << endl;
+
   return 0;
 }
 
 uint32_t FIFOMan(vector<uint16_t> randNContnr) {
+  cerr << "running FIFO" << endl;
   /* Prepare data structures */
   uint32_t diseffect = 0;  // mismatch
   set<uint16_t> memLookUp;  // use set for convient find and erase
   queue<uint16_t> FIFOContnr;   // page continer
 
   for (auto it = randNContnr.begin(); it != randNContnr.end(); it++) {
-    cout << "\nrequesting " << *it << endl;
+    cerr << "\nrequesting " << *it << endl;
     auto reqPageInMem = memLookUp.find(*it);  // find requested page in memory
 
     /* if not found */
@@ -56,13 +57,13 @@ uint32_t FIFOMan(vector<uint16_t> randNContnr) {
         uint16_t tbRemoved = FIFOContnr.front();
         FIFOContnr.pop();
         memLookUp.erase(tbRemoved);
-        cout << tbRemoved << " removed" << endl;
+        cerr << tbRemoved << " removed" << endl;
       }
     
       /* insert new mem page */
       FIFOContnr.push(*it);
       memLookUp.insert(*it);
-      cout << "put into mem " << *it << endl;
+      cerr << "put into mem " << *it << endl;
     }
   }
 
@@ -70,6 +71,7 @@ uint32_t FIFOMan(vector<uint16_t> randNContnr) {
 }
 
 uint32_t LRUMan(vector<uint16_t> randNContnr) {
+  cerr << "running LRU" << endl;
   /* Prepare data structures */
   uint32_t diseffect = 0;  // mismatch
   set<uint16_t> memLookUp;  // use set for convient find and erase
@@ -77,7 +79,7 @@ uint32_t LRUMan(vector<uint16_t> randNContnr) {
                   LRUTimeComp > LRUContnr, tmpContnr;   // page continer
 
   for (auto it = randNContnr.begin(); it != randNContnr.end(); it++) {
-    cout << "\nrequesting " << *it << endl;
+    cerr << "\nrequesting " << *it << endl;
     auto reqPageInMem = memLookUp.find(*it);  // find requested page in memory
 
     /* if not found */
@@ -89,20 +91,20 @@ uint32_t LRUMan(vector<uint16_t> randNContnr) {
         uint16_t tbRemoved = get<0>(LRUContnr.top());
         LRUContnr.pop();
         memLookUp.erase(tbRemoved);
-        cout << tbRemoved << " removed" << endl;
+        cerr << tbRemoved << " removed" << endl;
       }
     
       /* insert new mem page */
       LRUContnr.push(make_pair(*it, 0));
       memLookUp.insert(*it);
-      cout << "put into mem " << *it << endl;
+      cerr << "put into mem " << *it << endl;
 
     }
     /* replace with a 0 lapse */
     else {
       while (!LRUContnr.empty()) {
         if (get<0>(LRUContnr.top()) == *reqPageInMem) {
-          cout << *reqPageInMem << "found" << endl;
+          cerr << *reqPageInMem << "found" << endl;
           tmpContnr.push(make_pair(*reqPageInMem, 0));
           LRUContnr.pop();
         }
@@ -120,13 +122,13 @@ uint32_t LRUMan(vector<uint16_t> randNContnr) {
     while (!LRUContnr.empty()) {  // decide dynamically, cannot use .size()
       tmpContnr.push(make_pair(get<0>(LRUContnr.top()), \
                                get<1>(LRUContnr.top())+1));
-      cout << get<0>(LRUContnr.top()) << endl;
+      cerr << get<0>(LRUContnr.top()) << endl;
       LRUContnr.pop();
     }
     LRUContnr = tmpContnr;
     tmpContnr = priority_queue< pair<uint16_t, int>, vector< pair<uint16_t, int> >,
                 LRUTimeComp >();
-    cout << "top is <" << get<0>(LRUContnr.top()) << ", "
+    cerr << "top is <" << get<0>(LRUContnr.top()) << ", "
                        << get<1>(LRUContnr.top()) << ">" << endl;
   }
   return diseffect;
@@ -134,6 +136,7 @@ uint32_t LRUMan(vector<uint16_t> randNContnr) {
 
 
 uint32_t NURMan(vector<uint16_t> randNContnr) {
+  cerr << "running NUR" << endl;
   /* Prepare data structures */
   uint32_t diseffect = 0;  // mismatch
   vector<bool> memPageFlag;
@@ -142,25 +145,25 @@ uint32_t NURMan(vector<uint16_t> randNContnr) {
   for (auto it = randNContnr.begin(); it != randNContnr.end(); it++) {
     /* reset flags */
     if ((it - randNContnr.begin())%cycPeriod == 0) {
-      cout << "cleaning flag" << endl;
+      cerr << "cleaning flag" << endl;
       for (auto itt = memPageFlag.begin(); itt != memPageFlag.end(); itt++) {
         *itt = false;
       }
     }
 
-    cout << "\nrequesting " << *it << endl;
+    cerr << "\nrequesting " << *it << endl;
     auto reqPageInMem = find(memPage.begin(), memPage.end(), *it);  // find requested page in memory
     /* if found */
     if (reqPageInMem != memPage.end()) {
       int reqPos = reqPageInMem - memPage.begin();
-      cout << "found at positon " << reqPos << endl;
+      cerr << "found at positon " << reqPos << endl;
       memPageFlag[reqPos] = true;
     }
     else {
-`     diseffect++;
+      diseffect++;
       /* if within memory limit */
       if (memPage.size() < memPageLimit) {
-        cout << "added" << endl;
+        cerr << "added" << endl;
         memPage.push_back(*it);
         memPageFlag.push_back(true); 
       }
@@ -169,7 +172,7 @@ uint32_t NURMan(vector<uint16_t> randNContnr) {
         /* looking for unused page */
         for (itt = 0; itt < memPageFlag.size(); itt++) {
           if (memPageFlag[itt] == false) {
-            cout << memPage[itt] << " removed" << endl;
+            cerr << memPage[itt] << " removed" << endl;
             memPage[itt] = *it;
             memPageFlag[itt] = true;
             itt = 0;  // set flag
@@ -178,12 +181,60 @@ uint32_t NURMan(vector<uint16_t> randNContnr) {
         }
         /* all in use */
         if (itt > 0) {
-          cout << "all in use, swap unit 0" << endl;
-          cout << memPage[0] << " removed" << endl;
+          cerr << "all in use, swap unit 0" << endl;
+          cerr << memPage[0] << " removed" << endl;
           memPage[0] = *it;
         }
       }
     }
   }
+  return diseffect;
+}
+
+uint32_t OPTMan(vector<uint16_t> randNContnr) {
+  cerr << "running OPT" << endl;
+    /* Prepare data structures */
+  uint32_t diseffect = 0;  // mismatch
+  set<uint16_t> tbRmBuff;  // to be removed set
+  vector<uint16_t> memPage;
+
+  for (auto it = randNContnr.begin(); it != randNContnr.end(); it++) {
+    cerr << "\nrequesting " << *it << endl;
+    auto reqPageInMem = find(memPage.begin(), memPage.end(), *it);  // find requested page in memory
+    /* if not found */
+    if (reqPageInMem == memPage.end()) {
+      diseffect++;
+      /* if out of memory limit */
+      if (memPage.size() == memPageLimit) {
+        /* put in buffer */
+        tbRmBuff.clear();
+        for (auto itt = memPage.begin(); itt != memPage.end(); itt++) {
+          tbRmBuff.insert(*itt);
+        }
+        /* ignore to be used page */
+        for (int itt = it - randNContnr.begin(); \
+             tbRmBuff.size() > 1 && itt < totalInstruction; itt++) {
+          auto tbReqPageInBuff = tbRmBuff.find(randNContnr[itt]);
+          if (tbReqPageInBuff != tbRmBuff.end()) {
+            tbRmBuff.erase(tbReqPageInBuff);
+          }
+        }
+        /* swap out */
+        cerr << "finding " << *(tbRmBuff.begin()) << endl;
+        int reqPos = find(memPage.begin(), memPage.end(), *(tbRmBuff.begin()))\
+                 - memPage.begin();
+        cerr << memPage[reqPos] << " replaced" << endl;
+        memPage[reqPos] = *it;
+      }
+      else {
+        cerr << "added" << endl;
+        memPage.push_back(*it);
+      }
+    }
+    else {
+      cerr << "found" << endl;
+    }
+  }
+
   return diseffect;
 }
