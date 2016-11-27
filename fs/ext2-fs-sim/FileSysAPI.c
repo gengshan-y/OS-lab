@@ -4,11 +4,13 @@
 #include "Driver.h"
 #include "defs.h"
 #include "Queue_LinkedList.h"
-#include "uthash.h"
 
 
 #define NUM_INODE_BLOCKS 16
 #define NUM_DIRECT 13
+#define FILE_LIMIT 10
+#define CHILD_LIMIT 10
+#define FILE_NAME_LIMIT 100
 
 typedef struct inode {
     int direct[NUM_DIRECT];
@@ -17,17 +19,56 @@ typedef struct inode {
     int tripl;
 } inode_t;
 
-
-struct file {
+typedef struct file {
     char *filename;     /* hash key */
     int size;
     int block;
-    UT_hash_handle hh;  /* makes this structure hashable by uthash */
 } file;
 
-struct file *files = NULL;  /* hashmap, must be initialized to NULL for uthash */
+typedef struct dir {
+  char* dirName;
+  file* files;
+  int fileCount;
+  struct dir* children;
+  int childCount;
+} dir;
+
+dir dirSys;
+file files[100];  /* hashmap, must be initialized to NULL for uthash */
+int fileTbPt = 0; // file table pointer
 queue freequeue = {NULL, NULL}; 
 
+void add2Dir(struct file* f) {
+  dirSys.files[dirSys.fileCount++] = *f;
+  printf("added file %s, with block %d to file table\n", f->filename, f->block);
+} 
+
+void delfromSys(file* f) {
+  int it, itt;
+  for (it = 0; it < dirSys.fileCount; it++) {
+    if (&dirSys.files[it] == f) {
+      for (itt = it+1; itt < dirSys.fileCount; itt++) {
+        dirSys.files[itt-1] = dirSys.files[itt]; 
+      }
+      dirSys.fileCount--;
+      break;
+    }
+  }
+}
+
+struct file* fileLookUp(char* fileName) {
+  struct file* f = NULL;
+  int it;
+  for (it = 0; it < dirSys.fileCount; it++) {
+    if (!strcmp(dirSys.files[it].filename, fileName)) {
+      f = &dirSys.files[it];
+      printf("filename is %s, block is %d\n", f->filename, f->block);
+      return f;
+    }
+  }
+  printf("cannot find file\n");
+  return f;
+}
 
 void del_block(int block){
     enqueue(&freequeue, block);
@@ -60,8 +101,7 @@ int CSCI460_Delete(	char *Filename){
     inode_t inode;
     int i;
 
-    //hash Filename to get the file
-    HASH_FIND_STR(files, Filename, f);
+    f = fileLookUp(Filename);
 
     if(!f){
         return 0;
@@ -88,8 +128,9 @@ int CSCI460_Delete(	char *Filename){
     }
 
     //delete hash from hashmap
-    HASH_DEL(files, f);
-
+    delfromSys(f);
+  
+    free(f->filename);
     free(f);
     return 1;
 }
@@ -99,11 +140,12 @@ int CSCI460_Format (){
     struct file *tmp;
     int i;
 
-    //All hash associations should be cleared
-    HASH_ITER(hh, files, f, tmp){
-        HASH_DEL(files, f);
-        free(f);
-    } 
+    /* init dir system */
+    dirSys.dirName = "/";
+    dirSys.fileCount = 0;
+    dirSys.files = malloc(sizeof(file) * FILE_LIMIT);
+    dirSys.childCount = 0;
+    dirSys.children = malloc(sizeof(dir) * CHILD_LIMIT);
     
     while(!empty(&freequeue)){
         dequeue(&freequeue);   
@@ -191,12 +233,11 @@ struct file* create_file(char *FileName, int Size){
     inode.doubl = -1;
     inode.tripl = -1;
     
-
-    HASH_ADD_KEYPTR(hh, files, f->filename, strlen(f->filename), f);
     if(!write_block((char *) &inode, &pos, sizeof(inode), &(f->block))){
         perror("Couldn't write an inode to disk.");
     }
-    
+        
+    add2Dir(f);  // add to file system
     return f;
 }
 
@@ -206,7 +247,7 @@ int CSCI460_Write (	char *FileName, int Size, char *Data){
     int i = 0;
     inode_t inode;
 
-    HASH_FIND_STR(files, FileName, f);
+    f = fileLookUp(FileName);
 
     if(f){      /* Delete File if it exists */
         CSCI460_Delete(FileName);
@@ -287,15 +328,13 @@ int iread(int block, char *buf, int max, int *pos, int layer){
 }
 
 
-
 int CSCI460_Read (	char *FileName, int MaxSize, char *Data){
     struct file *f;
     inode_t inode;
     int num_read = 0;
     int i;
 
-    //hash FileName
-    HASH_FIND_STR(files, FileName, f);
+    f = fileLookUp(FileName);
 
     if (!f){
         return 0;
@@ -327,3 +366,19 @@ int CSCI460_Read (	char *FileName, int MaxSize, char *Data){
     return num_read;
 }
 
+void CSCI460_List() {
+  int it;
+  for (it = 0; it < dirSys.fileCount; it++) {
+    printf("%s ", dirSys.files[it].filename);
+  }
+  printf("\n");
+}
+
+void Clean() {
+  int it;
+//   for (it = 0; it < dirSys.fileCount; it++) {
+//     dirSys.files[it].
+//   }
+  free(dirSys.files);
+  free(dirSys.children);
+}
