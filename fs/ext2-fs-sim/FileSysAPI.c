@@ -23,45 +23,97 @@ typedef struct file {
     char *filename;     /* hash key */
     int size;
     int block;
+    int auth;
 } file;
 
 typedef struct dir {
   char* dirName;
-  file* files;
+  file** files;
   int fileCount;
   struct dir* children;
   int childCount;
+  int auth;
 } dir;
 
 dir dirSys;
-file files[100];  /* hashmap, must be initialized to NULL for uthash */
-int fileTbPt = 0; // file table pointer
 queue freequeue = {NULL, NULL}; 
 
+char* username = "root";
+char* passwd = "xjtu";
+int auth = 3;
+
+int login(char* uname, char* pwd) {
+  if (strcmp(uname, username)) {
+    printf("username unmatched\n");
+    return 0;
+  }
+  else if (strcmp(pwd, passwd)) {
+    printf("password unmatched\n");
+    return 0;
+  }
+  auth = 0;
+  return 1;
+}
+
+void logout() {
+  auth = 3;
+  printf("successfully logged out\n");
+}
+
 void add2Dir(struct file* f) {
-  dirSys.files[dirSys.fileCount++] = *f;
+  dirSys.files[dirSys.fileCount++] = f;
   printf("added file %s, with block %d to file table\n", f->filename, f->block);
 } 
+
+void initDir(dir* dirPt, char* dirName) {
+  dirPt->dirName = dirName;
+  dirPt->fileCount = 0;
+  dirPt->files = malloc(sizeof(file*) * FILE_LIMIT);
+  dirPt->childCount = 0;
+  dirPt->children = malloc(sizeof(dir) * CHILD_LIMIT);
+  dirPt->auth = auth;
+}
+
+void delDir(int dirIndex) {
+  int it;
+  for (it = dirIndex + 1; it < dirSys.childCount; it++) {
+    dirSys.children[it-1] = dirSys.children[it];
+  }
+  dirSys.childCount--;
+}
 
 void delfromSys(file* f) {
   int it, itt;
   for (it = 0; it < dirSys.fileCount; it++) {
-    if (&dirSys.files[it] == f) {
+    if (dirSys.files[it] == f) {
       for (itt = it+1; itt < dirSys.fileCount; itt++) {
         dirSys.files[itt-1] = dirSys.files[itt]; 
       }
       dirSys.fileCount--;
+      free(f);
       break;
     }
   }
+}
+
+int dirLookUp(char* fileName) {
+  int d;
+  int it;
+  for (it = 0; it < dirSys.childCount; it++) {
+    if (!strcmp(dirSys.children[it].dirName, fileName))
+      return it;
+  }
+  
+  printf("cannot find dictionary\n");
+  return -1;
 }
 
 struct file* fileLookUp(char* fileName) {
   struct file* f = NULL;
   int it;
   for (it = 0; it < dirSys.fileCount; it++) {
-    if (!strcmp(dirSys.files[it].filename, fileName)) {
-      f = &dirSys.files[it];
+    if (!strcmp(dirSys.files[it]->filename, fileName)) {
+      f = dirSys.files[it];
       printf("filename is %s, block is %d\n", f->filename, f->block);
       return f;
     }
@@ -96,14 +148,14 @@ int del(int block, int layer){
 }
 
 
-int CSCI460_Delete(	char *Filename){
+int Delete(	char *Filename){
     struct file *f;
     inode_t inode;
     int i;
 
     f = fileLookUp(Filename);
 
-    if(!f){
+    if(!f || f->auth < auth){
         return 0;
     }
 
@@ -130,22 +182,18 @@ int CSCI460_Delete(	char *Filename){
     //delete hash from hashmap
     delfromSys(f);
   
-    free(f->filename);
-    free(f);
+    // free(f->filename);
+    // free(f);
     return 1;
 }
 
-int CSCI460_Format (){
+int Format (){
     struct file *f;
     struct file *tmp;
     int i;
 
     /* init dir system */
-    dirSys.dirName = "/";
-    dirSys.fileCount = 0;
-    dirSys.files = malloc(sizeof(file) * FILE_LIMIT);
-    dirSys.childCount = 0;
-    dirSys.children = malloc(sizeof(dir) * CHILD_LIMIT);
+    initDir(&dirSys, "/");
     
     while(!empty(&freequeue)){
         dequeue(&freequeue);   
@@ -225,6 +273,7 @@ struct file* create_file(char *FileName, int Size){
 
     f->filename = FileName;
     f->size = Size;
+    f->auth = auth;
 
     for(i = 0; i < NUM_DIRECT; i++){
         inode.direct[i] = -1;
@@ -241,7 +290,7 @@ struct file* create_file(char *FileName, int Size){
     return f;
 }
 
-int CSCI460_Write (	char *FileName, int Size, char *Data){
+int Write (	char *FileName, int Size, char *Data){
     struct file *f;
     int pos = 0;
     int i = 0;
@@ -250,7 +299,7 @@ int CSCI460_Write (	char *FileName, int Size, char *Data){
     f = fileLookUp(FileName);
 
     if(f){      /* Delete File if it exists */
-        CSCI460_Delete(FileName);
+        Delete(FileName);
     }
 
     //Create new file
@@ -328,7 +377,7 @@ int iread(int block, char *buf, int max, int *pos, int layer){
 }
 
 
-int CSCI460_Read (	char *FileName, int MaxSize, char *Data){
+int Read (	char *FileName, int MaxSize, char *Data){
     struct file *f;
     inode_t inode;
     int num_read = 0;
@@ -366,19 +415,43 @@ int CSCI460_Read (	char *FileName, int MaxSize, char *Data){
     return num_read;
 }
 
-void CSCI460_List() {
+void List() {
   int it;
   for (it = 0; it < dirSys.fileCount; it++) {
-    printf("%s ", dirSys.files[it].filename);
+    printf("%s ", dirSys.files[it]->filename);
+  }
+  for (it = 0; it < dirSys.childCount; it++) {
+    printf("/%s ", dirSys.children[it].dirName);
   }
   printf("\n");
 }
 
+int Mkdir(char* dirName) {
+  int d = dirLookUp(dirName);
+
+  if (d >= 0) {
+    return 0;
+  }
+
+  initDir(dirSys.children+dirSys.childCount++, dirName);
+
+  return 1;
+}
+
+int Rmdir(char* dirName) {
+  int d = dirLookUp(dirName);
+  if (d == -1 || dirSys.children[d].auth < auth) {
+    return 0; 
+  }
+  
+  delDir(d);
+}
+
 void Clean() {
   int it;
-//   for (it = 0; it < dirSys.fileCount; it++) {
-//     dirSys.files[it].
-//   }
+  for (it = 0; it < dirSys.fileCount; it++) {
+    free(dirSys.files[it]);
+  }
   free(dirSys.files);
   free(dirSys.children);
 }
