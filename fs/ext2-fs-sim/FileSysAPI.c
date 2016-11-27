@@ -122,6 +122,7 @@ int write_block(char *buf, int *pos, int size, int *block){
     int free_block;
     char loc_buf[BYTES_PER_SECTOR];
 
+
     if(empty(&freequeue)){
         return 0;
     }
@@ -213,7 +214,8 @@ int CSCI460_Write (	char *FileName, int Size, char *Data){
 
     //Create new file
     f = create_file(FileName, Size);
-    DevRead(f->block, (char *)&inode);
+    DevRead(f->block, (char *)&inode);  // file inode name
+    // printf("file inode name %s \n", (char *)&inode);
 
     for(i = 0; i < NUM_DIRECT; i++){
         if(pos < Size - 1){
@@ -301,7 +303,7 @@ int CSCI460_Read (	char *FileName, int MaxSize, char *Data){
 
     //get the inode data for the file and copy into the inode
     DevRead(f->block, (char *)&inode);
-   
+
     //read direct blocks
     for(i = 0; i < NUM_DIRECT; i++){
         if(inode.direct[i] != -1){

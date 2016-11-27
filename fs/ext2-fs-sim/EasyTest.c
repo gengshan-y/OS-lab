@@ -86,7 +86,6 @@ int main() {
 	else
 		printf("<<%s>>\n", data);
 
-
 	//Now delete a file
 	if (!CSCI460_Delete("mydata2"))
 		printf("Cannot delete mydata2\n");
@@ -100,7 +99,6 @@ int main() {
 	else
 		printf("<<%s>>\n", data);
 
-
-    stress_test();
+  // stress_test();
 	return 0;
 }

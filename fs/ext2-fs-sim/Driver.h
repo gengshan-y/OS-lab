@@ -9,6 +9,14 @@
 #define BYTES_PER_SECTOR	64
 #define	SECTORS				32 * 1024
 
+typedef struct {
+  char content[BYTES_PER_SECTOR];
+}simSector;
+
+typedef struct {
+  simSector sector[SECTORS];
+}simDisk;
+
 int DevFormat();					// formats the device
 
 int DevWrite (						// writes one block to a specified sector
@@ -21,3 +29,4 @@ int DevRead (						// reads one block from a specified sector
 			  char *Data			// Data received
 			  );
 
+simDisk myDisk;
