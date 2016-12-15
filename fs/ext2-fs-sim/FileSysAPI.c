@@ -104,7 +104,7 @@ int dirLookUp(char* fileName) {
       return it;
   }
   
-  printf("cannot find dictionary\n");
+  // printf("cannot find dictionary\n");
   return -1;
 }
 
@@ -445,6 +445,7 @@ int Rmdir(char* dirName) {
   }
   
   delDir(d);
+  return 1;
 }
 
 void Clean() {

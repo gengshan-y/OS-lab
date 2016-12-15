@@ -1,10 +1,11 @@
-/*
- *	Source file APITest.c
- *
- *	Test program for file system API for CSCI 460 Assignment 3
- *
- *	David Bover, WWU, August 2008
- */
+/***
+ * Filename:        APITest.c
+ * Date:            Dec 14 2016
+ * Last Edited by:  Gengshan Yang
+ * Description:     A simple EXT2-OS simulation. With command "ls" "write" 
+ *                  "read" "mkdir" "del" "rmdir" "su" "exit" "quit"
+ ***/
+
 
 #include <stdio.h>
 #include <string.h>
@@ -14,6 +15,26 @@
 
 #define STRING_SIZE 10000
 #define ITERATIONS 1000
+#define IN_BUFF_LEN 1024
+
+
+/* from http://stackoverflow.com/questions/314401/how-to-read-a-line-from-the-console-in-c 
+   To avoid trunation by space */
+void getLine(char* line) {
+    char* oLine = line;
+    int c;
+
+    for(;;) {
+        c = fgetc(stdin);
+        if(c == EOF)
+            break;
+
+        if((*line++ = c) == '\n')
+            break;
+    }
+    *--line = '\0';
+}
+
 
 void checkCmd(char* cmd) {
   char* fileName = malloc(sizeof(char) * 256);
@@ -24,15 +45,15 @@ void checkCmd(char* cmd) {
   }
   else if (!strcmp(cmd, "write")) {
     printf("name:");
-    scanf("%s", fileName);
+    getLine(fileName);
     printf("data:");
-    scanf("%s", data);
+    getLine(data);
     if (!Write(fileName, strlen(data), data))
       printf("Error writing to file %s\n", fileName);
   }
   else if (!strcmp(cmd, "read")) {
     printf("name:");
-    scanf("%s", fileName);
+    getLine(fileName);
     if (!Read(fileName, 1023, data))
       printf("file does not exist\n");
     else {
@@ -41,27 +62,27 @@ void checkCmd(char* cmd) {
   }
   else if (!strcmp(cmd, "mkdir")) {
     printf("name:");
-    scanf("%s", fileName);
+    getLine(fileName);
     if (!Mkdir(fileName))
       printf("Cannot make dictionary\n");
   }
   else if (!strcmp(cmd, "del")) {
     printf("name:");
-    scanf("%s", fileName);
+    getLine(fileName);
     if (!Delete(fileName))
       printf("Cannot delete file\n");
   }
   else if (!strcmp(cmd, "rmdir")) {
     printf("name:");
-    scanf("%s", fileName);
+    getLine(fileName);
     if (!Rmdir(fileName))
       printf("Cannot delete dictionary\n");
   }
   else if (!strcmp(cmd, "su")) {
     printf("username:");
-    scanf("%s", fileName);
+    getLine(fileName);
     printf("password:");
-    scanf("%s", data);
+    getLine(data);
     if(login(fileName, data)) {
       printf("login success\n");
     }
@@ -77,8 +98,9 @@ void checkCmd(char* cmd) {
   }
 }
 
+
 int main() {
-	char cmd[1024];
+	char cmd[IN_BUFF_LEN];
   printf("EXT2 file system simulator.\n");
 
 	// Create the file system
@@ -86,7 +108,7 @@ int main() {
 		printf("Failed to create file system\n");
 
   while(1) {
-    scanf("%s", cmd);
+    getLine(cmd);
     checkCmd(cmd);
   }
   

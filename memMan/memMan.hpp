@@ -8,7 +8,7 @@
 #include <unistd.h>  // for getpid()
 #include <assert.h>
 
-#define totalInstruction 1000
+#define totalInstruction 100000
 #define totalPage 10
 #define memPageLimit 3
 #define cycPeriod 5
