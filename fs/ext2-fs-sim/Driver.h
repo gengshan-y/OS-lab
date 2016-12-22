@@ -1,10 +1,9 @@
-/*
- *	Header file Driver.h
- *
- *	Device driver for CSCI 460 Assignment 3
- *
- *	David Bover, WWU, August 2010
- */
+/***
+ * Filename:        Driver.h
+ * Date:            Dec 21 2016
+ * Last Edited by:  Gengshan Yang
+ * Description:     Disk Simulation
+ ***/
 
 #define BYTES_PER_SECTOR	64
 #define	SECTORS				32 * 1024

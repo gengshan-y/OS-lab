@@ -1,4 +1,11 @@
-# Modified
-`make APITest;./APITest`
 # ext2-filesystem-simulation
-Code that implements the ext2 filesystem structure in a simulation.
+EXT2 filesystem simulation code. Implemented based on [this repo](https://github.com/deanaarons/ext2-filesystem-simulation).
+
+## Usage
+`make APITest;./APITest`
+
+## Note
+- Disk Simulation: Driver.h
+- Free space management: freeMan.h
+- Directory, file allocation, privilige: FileSysApi.h
+- UI: APITest.c

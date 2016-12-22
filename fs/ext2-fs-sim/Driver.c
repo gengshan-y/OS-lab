@@ -1,7 +1,15 @@
+/***
+ * Filename:        Driver.c
+ * Date:            Dec 21 2016
+ * Last Edited by:  Gengshan Yang
+ * Description:     
+ ***/
+
 #include "Driver.h"
 #include <stdio.h>
 #include <string.h>
 
+/* from stackoverflow, to show hex */
 void hexDump (char *desc, void *addr, int len) {
     int i;
     unsigned char buff[17];

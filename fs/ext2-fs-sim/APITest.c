@@ -9,13 +9,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "FileSysAPI.h"
 #include "Driver.h"
-#include <stdlib.h>
 
-#define STRING_SIZE 10000
-#define ITERATIONS 1000
-#define IN_BUFF_LEN 1024
+#define IN_BUFF_LEN 1024  // keyboard input buffer length
 
 
 /* from http://stackoverflow.com/questions/314401/how-to-read-a-line-from-the-console-in-c 

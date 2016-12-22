@@ -1,16 +1,20 @@
+/***
+ * Filename:        FileSysAPI.c
+ * Date:            Dec 21 2016
+ * Last Edited by:  Gengshan Yang
+ * Description:     
+ ***/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "Driver.h"
-#include "defs.h"
-#include "Queue_LinkedList.h"
-
+#include "freeMan.h"
 
 #define NUM_INODE_BLOCKS 16
 #define NUM_DIRECT 13
 #define FILE_LIMIT 10
 #define CHILD_LIMIT 10
-#define FILE_NAME_LIMIT 100
 
 typedef struct inode {
     int direct[NUM_DIRECT];
